@@ -1,9 +1,5 @@
-using ClockApi.Common.Responses;
 using ClockApi.Functions.Entities;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
@@ -17,8 +13,8 @@ namespace ClockApi.Functions.Functions
     public static class ConsolidatedApi
     {
         [FunctionName("ConsolidatedApi")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "consolidated")] HttpRequest req,
+        public static async Task Run(
+            [TimerTrigger("* * * * *")] TimerInfo myTimer,
             [Table("record", Connection = "AzureWebJobsStorage")] CloudTable recordTable,
             [Table("consolidated", Connection = "AzureWebJobsStorage")] CloudTable consolidatedTable,
             ILogger log)
@@ -60,15 +56,36 @@ namespace ClockApi.Functions.Functions
 
                         };
                         TableOperation addOperation = TableOperation.Insert(consolidateEntity);
-                         await consolidatedTable.ExecuteAsync(addOperation);
+                        await consolidatedTable.ExecuteAsync(addOperation);
+
+                        //actualizar registro de salida
+                        record.IsConsolidated = true;
+                        TableOperation updateOperation = TableOperation.Replace(record);
+                        await recordTable.ExecuteAsync(updateOperation);
+
+                        //actualizar registro de entrada
+                        lastRecord.IsConsolidated = true;
+                        TableOperation updateOperation2 = TableOperation.Replace(lastRecord);
+                        await recordTable.ExecuteAsync(updateOperation2);
 
                     }
                     else
                     {
-                        ConsolidatedEntity con = consolidate[0];                        
-                        con.Minutes += hoursWorked;                        
+                        ConsolidatedEntity con = consolidate[0];
+                        con.Minutes += hoursWorked;
                         TableOperation updateOperation = TableOperation.Replace(con);
                         await consolidatedTable.ExecuteAsync(updateOperation);
+
+                        //actualizar registro de salida
+                        record.IsConsolidated = true;
+                        TableOperation updateOperation2 = TableOperation.Replace(record);
+                        await recordTable.ExecuteAsync(updateOperation2);
+
+                        //actualizar registro de entrada
+                        lastRecord.IsConsolidated = true;
+                        TableOperation updateOperation3 = TableOperation.Replace(lastRecord);
+                        await recordTable.ExecuteAsync(updateOperation3);
+
                     }
 
 
@@ -81,17 +98,7 @@ namespace ClockApi.Functions.Functions
 
             }
 
-
-
-
-
-            return new OkObjectResult(new Response
-            {
-                IsSuccess = true,
-                Message = "ejemplo",
-                Result = orderListRecords
-
-            });
+            log.LogInformation("Consolidated process finish");
         }
 
         public static int TimeBetweenDates(DateTime initialDate, DateTime finaldate)
