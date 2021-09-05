@@ -2,7 +2,7 @@
 
 namespace ClockApi.Common.Model
 {
-    internal class Record
+    public class Record
     {
         public int Id { get; set; }
 

@@ -3,7 +3,7 @@ using System;
 
 namespace ClockApi.Functions.Entities
 {
-    internal class RecordEntity : TableEntity
+    public class RecordEntity : TableEntity
     {
         public int Id { get; set; }
 
