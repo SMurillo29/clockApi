@@ -139,5 +139,28 @@ namespace ClockApi.Functions.Functions
 
             });
         }
+
+        [FunctionName(nameof(GetAllRecords))]
+        public static async Task<IActionResult> GetAllRecords(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "record")] HttpRequest req,
+        [Table("record", Connection = "AzureWebJobsStorage")] CloudTable recordTable,
+        ILogger log)
+        {
+            log.LogInformation("Get all Records Recived.");
+
+            TableQuery<RecordEntity> query = new TableQuery<RecordEntity>();
+            TableQuerySegment<RecordEntity> records = await recordTable.ExecuteQuerySegmentedAsync(query, null);
+
+            string message = "Retrieved all Records";
+            log.LogInformation(message);
+
+            return new OkObjectResult(new Response
+            {
+                IsSuccess = true,
+                Message = message,
+                Result = records
+
+            });
+        }
     }
 }
