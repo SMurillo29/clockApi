@@ -193,5 +193,38 @@ namespace ClockApi.Functions.Functions
 
             });
         }
+
+        [FunctionName(nameof(DeleteRecord))]
+        public static async Task<IActionResult> DeleteRecord(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "record/{id}")] HttpRequest req,
+        [Table("record", "REC", "{id}", Connection = "AzureWebJobsStorage")] RecordEntity recordEntity,
+        [Table("record", Connection = "AzureWebJobsStorage")] CloudTable recordTable,
+        string id,
+        ILogger log)
+        {
+            log.LogInformation($"Delete Record: {id} Recived.");
+
+
+            if (recordEntity == null)
+            {
+                return new BadRequestObjectResult(new Response
+                {
+                    IsSuccess = false,
+                    Message = "Record not found."
+                });
+            }
+
+            await recordTable.ExecuteAsync(TableOperation.Delete(recordEntity));
+            string message = $"Record {id} deleted";
+            log.LogInformation(message);
+
+            return new OkObjectResult(new Response
+            {
+                IsSuccess = true,
+                Message = message,
+                Result = recordEntity
+
+            });
+        }
     }
 }
