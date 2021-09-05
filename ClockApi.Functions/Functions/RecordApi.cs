@@ -162,5 +162,36 @@ namespace ClockApi.Functions.Functions
 
             });
         }
+
+        [FunctionName(nameof(GetRecordById))]
+        public static IActionResult GetRecordById(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "record/{id}")] HttpRequest req,
+        [Table("record", "REC", "{id}", Connection = "AzureWebJobsStorage")] RecordEntity recordEntity,
+        string id,
+        ILogger log)
+        {
+            log.LogInformation($"Get record by id: {id} Recived.");
+
+
+            if (recordEntity == null)
+            {
+                return new BadRequestObjectResult(new Response
+                {
+                    IsSuccess = false,
+                    Message = "Record not found."
+                });
+            }
+
+            string message = $"Record {id} retived";
+            log.LogInformation(message);
+
+            return new OkObjectResult(new Response
+            {
+                IsSuccess = true,
+                Message = message,
+                Result = recordEntity
+
+            });
+        }
     }
 }
