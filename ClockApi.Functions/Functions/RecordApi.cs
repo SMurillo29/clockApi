@@ -48,7 +48,7 @@ namespace ClockApi.Functions.Functions
 
             RecordEntity recordEntity = new RecordEntity
             {
-                DateTimeRecord = System.DateTime.UtcNow,
+                DateTimeRecord = record.DateTimeRecord,
                 ETag = "*",
                 IsConsolidated = false,
                 PartitionKey = "REC",
@@ -122,6 +122,7 @@ namespace ClockApi.Functions.Functions
             if (record.Id != 0)
             {
                 recordEntity.Id = record.Id;
+                recordEntity.DateTimeRecord = record.DateTimeRecord;
             }
             TableOperation updateOperation = TableOperation.Replace(recordEntity);
             await recordTable.ExecuteAsync(updateOperation);

@@ -1,5 +1,9 @@
+using ClockApi.Common.Responses;
 using ClockApi.Functions.Entities;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
@@ -41,13 +45,13 @@ namespace ClockApi.Functions.Functions
                     string filter2 = TableQuery.GenerateFilterConditionForInt("ID", QueryComparisons.Equal, record.Id);
                     TableQuery<ConsolidatedEntity> queryConsilidates = new TableQuery<ConsolidatedEntity>().Where(filter2);
                     TableQuerySegment<ConsolidatedEntity> querys = await consolidatedTable.ExecuteQuerySegmentedAsync(queryConsilidates, null);
-                    consolidate = querys.Results.Where(x => x.Date.Date == DateTime.UtcNow.Date).ToList();
+                    consolidate = querys.Results.Where(x => x.Date.Date == record.DateTimeRecord.Date).ToList();
 
                     if (consolidate.Count() == 0)
                     {
                         ConsolidatedEntity consolidateEntity = new ConsolidatedEntity
                         {
-                            Date = System.DateTime.UtcNow,
+                            Date = record.DateTimeRecord.Date,
                             ID = record.Id,
                             Minutes = hoursWorked,
                             ETag = "*",
@@ -99,6 +103,38 @@ namespace ClockApi.Functions.Functions
             }
 
             log.LogInformation("Consolidated process finish");
+        }
+
+        [FunctionName(nameof(GetConsolidatedsByDate))]
+        public static async Task<IActionResult> GetConsolidatedsByDate(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "consolidated/{date}")] HttpRequest req,
+        [Table("consolidated", Connection = "AzureWebJobsStorage")] CloudTable consolidatedTable,
+        string date,
+        ILogger log)
+        {
+            log.LogInformation($"Get record by Date: {date} Recived.");
+            string dateString = date;
+            DateTime date1 = DateTime.Parse(dateString,
+                                      System.Globalization.CultureInfo.InvariantCulture);
+
+            string filter = TableQuery.GenerateFilterConditionForDate("Date", QueryComparisons.Equal, date1.Date);
+            //TableQuery<ConsolidatedEntity> queryConsilidates = new TableQuery<ConsolidatedEntity>().Where(filter);
+            TableQuery<ConsolidatedEntity> queryConsilidates = new TableQuery<ConsolidatedEntity>();
+            TableQuerySegment<ConsolidatedEntity> querys = await consolidatedTable.ExecuteQuerySegmentedAsync(queryConsilidates, null);
+            List<ConsolidatedEntity> consolidate = querys.Results.Where(x => x.Date.Date == date1.Date).ToList();
+
+
+
+
+            string message = $"Record {date} retived";
+            log.LogInformation(message);
+            return new OkObjectResult(new Response
+            {
+                IsSuccess = true,
+                Message = message,
+                Result = consolidate
+
+            });
         }
 
         public static int TimeBetweenDates(DateTime initialDate, DateTime finaldate)
