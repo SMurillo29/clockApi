@@ -76,5 +76,68 @@ namespace ClockApi.Functions.Functions
             });
         }
 
+        [FunctionName(nameof(UpdateRecord))]
+        public static async Task<IActionResult> UpdateRecord(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "record/{id}")] HttpRequest req,
+        [Table("record", Connection = "AzureWebJobsStorage")] CloudTable recordTable,
+        string id,
+        ILogger log)
+        {
+            log.LogInformation($"Update for Record: {id}, recived.");
+
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            Record record = JsonConvert.DeserializeObject<Record>(requestBody);
+            if (record.Id == 0)
+            {
+                return new BadRequestObjectResult(new Response
+                {
+                    IsSuccess = false,
+                    Message = "The request body must have a employed ID"
+                });
+            }
+
+            if (record.Type != 1 && record.Type != 0)
+            {
+                return new BadRequestObjectResult(new Response
+                {
+                    IsSuccess = false,
+                    Message = "the record type can only be 1 or 0"
+                });
+            }
+
+            //validate record id.
+            TableOperation findOperation = TableOperation.Retrieve<RecordEntity>("REC", id);
+            TableResult findResult = await recordTable.ExecuteAsync(findOperation);
+            if (findResult.Result == null)
+            {
+                return new BadRequestObjectResult(new Response
+                {
+                    IsSuccess = false,
+                    Message = "Record not found."
+                });
+            }
+            /// update record
+            RecordEntity recordEntity = (RecordEntity)findResult.Result;
+            recordEntity.Type = record.Type;
+            if (record.Id != 0)
+            {
+                recordEntity.Id = record.Id;
+            }
+            TableOperation updateOperation = TableOperation.Replace(recordEntity);
+            await recordTable.ExecuteAsync(updateOperation);
+
+            string message = $"Record: {id}, updated in table.";
+            log.LogInformation(message);
+
+
+
+            return new OkObjectResult(new Response
+            {
+                IsSuccess = true,
+                Message = message,
+                Result = recordEntity
+
+            });
+        }
     }
 }
