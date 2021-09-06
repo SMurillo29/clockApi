@@ -2,7 +2,7 @@
 
 namespace ClockApi.Common.Model
 {
-    internal class Consolidated
+    public class Consolidated
     {
         // ID Empleo(int)       
         // Fecha(date time)

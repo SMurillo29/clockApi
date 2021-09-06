@@ -30,17 +30,20 @@ namespace ClockApi.Test.Tests
         public async void UpdateRecord_Should_Return_200()
         {
             //Arrenge
-            MockCloudTableRecords mockTodos = new MockCloudTableRecords(new Uri("http://127.0.0.1:10002/devstoreaccount1/reports"));
+            MockCloudTableRecords mockRecords = new MockCloudTableRecords(new Uri("http://127.0.0.1:10002/devstoreaccount1/reports"));
             Common.Model.Record record = TestFactory.GetRecordRequest();
             Guid recordId = Guid.NewGuid();
             DefaultHttpRequest request = TestFactory.CreateHttpRequest(recordId, record);
 
             //Act
-            IActionResult response = await RecordApi.UpdateRecord(request, mockTodos, recordId.ToString(), logger);
+            IActionResult response = await RecordApi.UpdateRecord(request, mockRecords, recordId.ToString(), logger);
             //Assert
             OkObjectResult result = (OkObjectResult)response;
             Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
         }
+
+
+
 
 
     }
